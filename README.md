@@ -15,6 +15,10 @@
     - Catch fire: Poles catch fire, damaging surrounding entities (each pole is set on fire if `consumption / max_consumption + 0.01) * math.random() > 1` applied on average every 10 seconds)
     - Nothing: Nothing happens. Use temporarily when adding the mod to an existing save so that the necessary adjustments can be made first.
 
+## Energy in watt-hours
+- Fuels (including fluids), accumulators and battery equipment get an extra row in their tooltip and Factoriopedia entry with the energy in watt-hours, e.g. coal `Fuel value: 1.11 kWh`, accumulator `Capacity: 1.39 kWh`. The unit (Wh, kWh, MWh, GWh...) is chosen automatically. Startup setting "Energy in watt-hours in tooltips", on by default
+- Opening a power pole or an accumulator shows an "Energy" panel next to the game's window with the stored energy in watt-hours and the charge percentage, for the accumulator and for its whole network, e.g. `Network: 416 kWh / 556 kWh (75%, 400 accumulators)`. Per-player setting "Energy panel in watt-hours", on by default
+
 ## Tips
 - You'll want to have a central 'spine' of higher tier poles. Use transformers to branch off it into subnetworks containing lower tier poles
 - Don't forget the vanilla methods of removing wires:
