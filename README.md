@@ -31,6 +31,9 @@ A map overlay of the transformer grid, toggled per player with the "Toggle grid 
 - One line from each transformer to each transformer it feeds, with a dot at the receiving end
 - Width shows the power on that route; colour shows its line loss (green below 10%, yellow below 50%, red above, grey when idle); a label shows both, e.g. `1.0MW · 0.4%`
 - Only drawn in map view, only for players who switched it on, and updated once a second
+- A panel shows the grid's power balance, averaged over the last 5 seconds: power generated, power reaching consumers, and power lost, split into transformer inefficiency and line losses, each also as a percentage of what was generated
+    - Generation is worked out from the energy balance (consumption of every network a transformer touches, minus what the transformers deliver into them), so it covers generators feeding the transformer grid; grids with no transformer are not included
+    - The totals are only kept while someone has the diagram on
 
 ## Tips
 - You'll want to have a central 'spine' of higher tier poles. Use transformers to branch off it into subnetworks containing lower tier poles
