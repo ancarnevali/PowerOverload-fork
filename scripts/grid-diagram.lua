@@ -7,7 +7,7 @@
 --   colour = line loss on the route: green < 10%, yellow < 50%, red above;
 --            grey when no power flows
 --   label  = "power · loss" at the midpoint, dot at the downstream end
--- A panel (top left) shows the grid's energy balance over the last 5 s:
+-- A panel (top left) shows the grid's energy balance, averaged over the last 5 s:
 -- generated power, power reaching machines, and power lost, split into
 -- transformer efficiency and line losses, each also as % of generation.
 --
