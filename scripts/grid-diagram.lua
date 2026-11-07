@@ -7,6 +7,10 @@
 --   colour = line loss on the route: green < 10%, yellow < 50%, red above;
 --            grey when no power flows
 --   label  = "power · loss" at the midpoint, dot at the downstream end
+-- A panel (top left) shows the grid's energy balance over the last 5 s:
+-- generated power, power reaching machines, and power lost, split into
+-- transformer efficiency and line losses, each also as % of generation.
+--
 -- Map view only, and only for players who switched it on with the
 -- "Toggle grid diagram" shortcut (off by default, per player).
 --
@@ -19,6 +23,11 @@
 --     graphics/shortcuts.
 
 local UPDATE_INTERVAL = 60
+-- Energy-balance window. Transformer energy is summed tick by tick over
+-- exactly this many ticks; network consumption is Power Overload's 5-second
+-- average, so both cover the same span of time.
+local STATS_WINDOW = 300
+local PANEL_NAME = "po-grid-panel"
 local SHORTCUT = "po-toggle-grid-diagram"
 
 local COLOURS = {
@@ -42,12 +51,92 @@ end
 
 -- Removes every drawing this module made.
 function grid_diagram_clear()
+  storage.grid_stats = nil
+  for _, player in pairs(game.players) do
+    local panel = player.gui.left[PANEL_NAME]
+    if panel then panel.destroy() end
+  end
   local state = storage.grid_diagram
   if not state then return end
   for _, route in pairs(state.routes) do
     destroy_route(route)
   end
   storage.grid_diagram = nil
+end
+
+-- Energy balance -------------------------------------------------------------
+-- Every joule generated on the transformer grid either reaches a consumer or
+-- is lost in a transformer (accumulators charging count as consumers). So
+--   generated = Σ consumption of every network a transformer touches
+--               − what transformers deliver into those networks
+-- and losses come from the totals summed in update_transformers.
+
+---@param tick GameTick
+---@return table? balance  nil until the first full window has been measured
+local function measure_balance(tick)
+  local stats = storage.grid_stats
+  if not stats then return nil end
+  local window_ticks = tick - stats.start_tick
+  if window_ticks < STATS_WINDOW then return stats.last end
+
+  local seconds = window_ticks / 60
+  local p_in = stats.e_in / seconds
+  local p_out = stats.e_out / seconds
+  local p_line = stats.e_line / seconds
+  local p_lost = p_in - p_out
+
+  -- Consumption of every network a transformer touches, each counted once
+  local consumption, seen = 0, {}
+  for _, transformer_parts in pairs(storage.transformers) do
+    for _, pole in pairs({transformer_parts.pole_in, transformer_parts.pole_out}) do
+      if pole and pole.valid then
+        local network_id = pole.electric_network_id
+        if network_id and not seen[network_id] then
+          seen[network_id] = true
+          consumption = consumption + get_network_consumption(pole, tick)
+        end
+      end
+    end
+  end
+
+  local generated = consumption - p_out
+  if generated < p_lost then generated = p_lost end  -- guard against sampling skew
+  stats.last = {
+    generated = generated,
+    lost = p_lost,
+    line = p_line,
+    transformer = p_lost - p_line,
+    delivered = generated - p_lost,
+  }
+  stats.e_in, stats.e_out, stats.e_line = 0, 0, 0
+  stats.start_tick = tick
+  return stats.last
+end
+
+local function percent_of(part, whole)
+  if whole <= 0 then return "0.0" end
+  return string.format("%.1f", part / whole * 100)
+end
+
+---@param player LuaPlayer
+---@param balance table?
+local function update_panel(player, balance)
+  local panel = player.gui.left[PANEL_NAME]
+  if not panel then
+    panel = player.gui.left.add{type = "frame", name = PANEL_NAME, direction = "vertical", caption = {"po-grid.panel-title"}}
+  end
+  panel.clear()
+  if not balance then
+    panel.add{type = "label", caption = {"po-grid.measuring"}}
+    return
+  end
+  local format = shared.format_energy_number
+  local g = balance.generated
+  panel.add{type = "label", caption = {"po-grid.generated", format(g)}}
+  panel.add{type = "label", caption = {"po-grid.delivered", format(balance.delivered), percent_of(balance.delivered, g)}}
+  panel.add{type = "label", caption = {"po-grid.lost", format(balance.lost), percent_of(balance.lost, g)}}
+  panel.add{type = "label", caption = {"po-grid.lost-transformers", format(balance.transformer), percent_of(balance.transformer, g)}}
+  panel.add{type = "label", caption = {"po-grid.lost-lines", format(balance.line), percent_of(balance.line, g)}}
 end
 
 ---@return uint[] players, string key  players with the diagram on, and a key to detect changes
@@ -104,6 +193,22 @@ function update_grid_diagram(tick, force)
   if not state then
     state = {routes = {}, players_key = players_key}
     storage.grid_diagram = state
+  end
+
+  -- Energy balance panel
+  if not storage.grid_stats then
+    storage.grid_stats = {e_in = 0, e_out = 0, e_line = 0, start_tick = tick}
+  end
+  local balance = measure_balance(tick)
+  local viewing = {}
+  for _, index in pairs(players) do viewing[index] = true end
+  for _, player in pairs(game.connected_players) do
+    if viewing[player.index] then
+      update_panel(player, balance)
+    else
+      local panel = player.gui.left[PANEL_NAME]
+      if panel then panel.destroy() end
+    end
   end
   local players_changed = state.players_key ~= players_key
   state.players_key = players_key

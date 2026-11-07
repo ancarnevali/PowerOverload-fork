@@ -269,7 +269,8 @@ function update_transformers(tick)
         end
         local interface_in = transformer.interface_in
         local interface_out = transformer.interface_out
-        local efficiency = base_efficiency * get_line_factor(transformer)
+        local line_factor = get_line_factor(transformer)
+        local efficiency = base_efficiency * line_factor
         local buffer_size = interface_in.electric_buffer_size
         local energy_in = interface_in.energy
         local energy_out = interface_out.energy
@@ -303,6 +304,15 @@ function update_transformers(tick)
         -- Energy moved, summed for the 60-tick power average used by line losses
         transformer.e_in = (transformer.e_in or 0) + actual_input_used
         transformer.e_out = (transformer.e_out or 0) + actual_output_gained
+
+        -- Grid-wide totals for the grid diagram panel; only exists while a
+        -- player has the diagram on. grid-diagram (optional)
+        local grid_stats = storage.grid_stats
+        if grid_stats then
+          grid_stats.e_in = grid_stats.e_in + actual_input_used
+          grid_stats.e_out = grid_stats.e_out + actual_output_gained
+          grid_stats.e_line = grid_stats.e_line + actual_input_used * base_efficiency * (1 - line_factor)
+        end
       end
       -- Every 60 ticks per transformer (staggered): 60 ticks of energy in J is
       -- the average power in W. Runs even when switched off so a stopped
