@@ -30,4 +30,18 @@ data:extend{
     maximum_value = 1,
     order = "d"
   },
+  {
+    type = "bool-setting",
+    name = "power-overload-energy-tooltips",
+    setting_type = "startup",
+    default_value = true,
+    order = "z-a"
+  },
+  {
+    type = "bool-setting",
+    name = "power-overload-energy-panel",
+    setting_type = "runtime-per-user",
+    default_value = true,
+    order = "z-b"
+  },
 }

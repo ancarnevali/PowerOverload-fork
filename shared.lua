@@ -29,6 +29,20 @@ local function validate_and_parse_energy(consumption, for_tooltips)
   end
 end
 
+-- Joules -> "1.11 kWh", choosing Wh/kWh/MWh/... so the number stays below
+-- 1000, 3 significant figures. Safe at the data stage.
+local WH_PREFIXES = {"", "k", "M", "G", "T", "P", "E"}
+local function format_watt_hours(joules)
+  local v = joules / 3600
+  local i = 1
+  -- step up while the rounded value would reach 1000 (avoids "1e+03 kWh")
+  while i < #WH_PREFIXES and tonumber(string.format("%.3g", math.abs(v))) >= 1000 do
+    v = v / 1000
+    i = i + 1
+  end
+  return string.format("%.3g %sWh", v, WH_PREFIXES[i])
+end
+
 local function format_energy_number(amount)
   local result = util.format_number(amount, true) .. "W"
   result = result:gsub("B", "G")
@@ -282,6 +296,7 @@ end
 
 return {
   get_pole_names = get_pole_names,
+  format_watt_hours = format_watt_hours,
   get_pole_names_from_settings = get_pole_names_from_settings,
   get_pole_aliases = get_pole_aliases,
   validate_and_parse_energy = validate_and_parse_energy,

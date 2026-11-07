@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 2.4.0
+  Features:
+    - Energy in watt-hours: fuels, accumulators and battery equipment get a Wh/kWh/MWh row in their tooltip and Factoriopedia entry (startup setting).
+    - An "Energy" panel next to the electric network and accumulator windows shows stored energy in watt-hours with charge percentage (per-player setting).
+---------------------------------------------------------------------------------------------------
 Version: 2.3.3
 Date: 02 November 2026
   Bugfixes:

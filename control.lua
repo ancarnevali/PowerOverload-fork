@@ -7,6 +7,7 @@ require "__PowerOverload__/scripts/power-interface"
 require "__PowerOverload__/scripts/pole-info-rendering"
 require "__PowerOverload__/scripts/network-rendering"
 require "__PowerOverload__/scripts/transformer-gui"
+require "__PowerOverload__/scripts/energy-panel"
 
 ---@alias ElectricNetworkID uint
 ---@alias PoleType "pole"|"fuse"
@@ -93,6 +94,7 @@ script.on_event(defines.events.on_tick,
     update_poles("pole", tick)
     update_transformers(tick)
     update_pole_rendering(tick)
+    update_energy_panels(tick)
     update_network_overlay(tick)
     purge_consumption_cache(tick)
   end
@@ -164,8 +166,15 @@ script.on_event(defines.events.on_lua_shortcut,
 )
 
 -- Transformer network GUI
-script.on_event(defines.events.on_gui_opened, transformer_gui_on_opened)
-script.on_event(defines.events.on_gui_closed, transformer_gui_on_closed)
+-- One handler per event, so each GUI module gets the event in turn
+script.on_event(defines.events.on_gui_opened, function(event)
+  transformer_gui_on_opened(event)
+  energy_panel_on_opened(event)
+end)
+script.on_event(defines.events.on_gui_closed, function(event)
+  transformer_gui_on_closed(event)
+  energy_panel_on_closed(event)
+end)
 script.on_event(defines.events.on_gui_text_changed, transformer_gui_on_text_changed)
 script.on_event(defines.events.on_gui_value_changed, transformer_gui_on_value_changed)
 
